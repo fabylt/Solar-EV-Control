@@ -1,29 +1,24 @@
 ARG BUILD_FROM=ghcr.io/hassio-addons/base:14.0.3
 FROM $BUILD_FROM
 
-# Install Node.js and basic building tools with musl-compatibility for native bindings
-RUN apk add --no-cache nodejs npm libc6-compat gcompat python3 build-base
+# Install Node.js and npm (without heavy C++ build tools)
+RUN apk add --no-cache nodejs npm
 
 # Setup working directory
 WORKDIR /app
 
-# Copy package list
+# Copy dependency manifests
 COPY package.json ./
 
-# Force NPM to install correct platform-specific dependencies and rebuild the native Tailwind compiler
-# This prevents NPM caching issues across architectures (e.g. x64 to ARM64 / Raspberry Pi)
-RUN rm -rf node_modules package-lock.json && \
-    npm install --no-audit --no-fund --include=optional && \
-    npm rebuild @tailwindcss/oxide
+# Install ONLY production dependencies to run the compiled Express server
+# This avoids installing development dependencies like Tailwind, Vite and esbuild,
+# completely bypassing any native architecture compilation issue on Raspberry Pi.
+RUN npm install --omit=dev --no-audit --no-fund
 
-# Now copy the remaining application files
+# Copy the rest of the application files (including the pre-built dist/ folder)
 COPY . .
-
-# Run production build
-RUN npm run build
 
 # Make the run script executable
 RUN chmod a+x /app/run.sh
 
 CMD [ "/app/run.sh" ]
-
