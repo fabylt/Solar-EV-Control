@@ -1,8 +1,8 @@
 ARG BUILD_FROM=ghcr.io/hassio-addons/base:14.0.3
 FROM $BUILD_FROM
 
-# Install Node.js and basic building tools if needed, although alpine package is usually enough
-RUN apk add --no-cache nodejs npm
+# Install Node.js and basic building tools with glibc-compatibility for native bindings (Tailwind v4 Oxide/Rust)
+RUN apk add --no-cache nodejs npm libc6-compat python3 build-base
 
 # Setup working directory
 WORKDIR /app
